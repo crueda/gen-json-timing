@@ -33,6 +33,7 @@ INTERNAL_LOG_FILE = config['directory_logs'] + "/gen-json-timing.log"
 LOG_FOR_ROTATE = 10
 
 stage1_date = config['STAGE1_DATE']
+entry_url = config['ENTRY_URL']
 stage1_url = config['STAGE1_URL']
 
 PID = "/var/run/json-generator-timing"
@@ -40,7 +41,8 @@ PID = "/var/run/json-generator-timing"
 from json import encoder
 encoder.FLOAT_REPR = lambda o: format(o, '.4f')
 
- 
+entryList = {}
+
 ########################################################################
 # definimos los logs internos que usaremos para comprobar errores
 try:
@@ -83,6 +85,23 @@ def getUTC():
 	t = calendar.timegm(datetime.datetime.utcnow().utctimetuple())
 	return int(t)
 
+def getEntryList():
+	headers = {"Content-type": "application/json"}	
+	try:
+		response = requests.get(entry_url)
+		entryXml = response.text
+		#xmldoc = minidom.parseString(entryXml)
+		xmldoc = minidom.parseString(u'{0}'.format(entryXml).encode('utf-8'))
+		itemlist = xmldoc.getElementsByTagName('entry')
+		#print itemlist
+		for s in itemlist:
+			nr = s.attributes['nr'].value
+			driverName = s.attributes['driverName'].value
+			driverSurname = s.attributes['driverSurname'].value
+			entryList[str(nr)] = driverName + " " + driverSurname
+
+	except requests.ConnectionError as e:
+		print "Error al llamar a la api:" + str(e)
 
 def genTiming(url):
 	array_list = []
@@ -106,7 +125,7 @@ def genTiming(url):
 			nr = s.attributes['nr'].value
 			stime = s.attributes['time'].value
 
-			competitor = {"type": "car_timing", "properties": {"pos": pos, "nr": nr, "driver": "Dani SORDO", "diff": stime}}
+			competitor = {"type": "car_timing", "properties": {"pos": pos, "nr": nr, "driver": entryList[str(nr)], "diff": stime}}
 			array_list.append(competitor)
 
 		#with open('/var/www2/timing.json', 'w') as outfile:
@@ -116,6 +135,7 @@ def genTiming(url):
 	except requests.ConnectionError as e:
 		print "Error al llamar a la api:" + str(e)
 
+getEntryList()
 genTiming(stage1_url)
 
 #while True:
