@@ -12,14 +12,17 @@
 ##################################################################################
 
 
-import MySQLdb
 import logging, logging.handlers
 import os
 import json
 import sys
 import datetime
 import calendar
+import requests
 import time
+import xml.etree.ElementTree
+
+from xml.dom import minidom
 
 #### VARIABLES #########################################################
 from configobj import ConfigObj
@@ -40,11 +43,6 @@ encoder.FLOAT_REPR = lambda o: format(o, '.4f')
  
 ########################################################################
 # definimos los logs internos que usaremos para comprobar errores
-log_folder = os.path.dirname(INTERNAL_LOG)
-
-if not os.path.exists(log_folder):
-	os.makedirs(log_folder)
-
 try:
 	logger = logging.getLogger('wrc-json-timing')
 	loggerHandler = logging.handlers.TimedRotatingFileHandler(INTERNAL_LOG_FILE , 'midnight', 1, backupCount=10)
@@ -87,16 +85,33 @@ def getUTC():
 
 
 def genTiming(url):
+	array_list = []
+
 	headers = {"Content-type": "application/json"}	
 	try:
 		response = requests.get(url)
-		#print "code:"+ str(response.status_code)
-		#print "headers:"+ str(response.headers)
-		#print "content:"+ str(response.text)
 		timingXml = response.text
-		e = xml.etree.ElementTree.parse(timingXml).getroot()
-		for atype in e.findall('type'):
-			print(atype.get('competitor'))
+
+		xmldoc = minidom.parseString(timingXml)
+		itemlistSplit = xmldoc.getElementsByTagName('splitTimes')
+		stageId = itemlistSplit[0].attributes['stage'].value
+		stageName = itemlistSplit[0].attributes['location'].value
+		stageTitle = "SS" + stageId + " - " + stageName
+		stage = {"type": "stage_data", "properties": {"stageName": stageTitle }}
+		array_list.append(stage)
+
+		itemlistCompetitor = xmldoc.getElementsByTagName('competitor')
+		for s in itemlistCompetitor:
+			pos = s.attributes['pos'].value
+			nr = s.attributes['nr'].value
+			stime = s.attributes['time'].value
+
+			competitor = {"type": "car_timing", "properties": {"pos": pos, "nr": nr, "driver": "Dani SORDO", "diff": stime}}
+			array_list.append(competitor)
+
+		#with open('/var/www2/timing.json', 'w') as outfile:
+		with open('./timing.json', 'w') as outfile:
+			json.dump(array_list, outfile)
 
 	except requests.ConnectionError as e:
 		print "Error al llamar a la api:" + str(e)
