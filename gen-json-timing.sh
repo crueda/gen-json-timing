@@ -125,7 +125,7 @@ def genTiming(url):
 			nr = s.attributes['nr'].value
 			stime = s.attributes['time'].value
 
-			competitor = {"type": "car_timing", "properties": {"pos": pos, "nr": nr, "driver": entryList[str(nr)], "diff": stime}}
+			competitor = {"type": "car_timing", "properties": {"pos": int(pos), "nr": int(nr), "driver": entryList[str(nr)], "diff": stime}}
 			array_list.append(competitor)
 
 		#with open('/var/www2/timing.json', 'w') as outfile:
