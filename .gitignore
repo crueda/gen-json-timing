@@ -1,0 +1,4 @@
+gen-json.sublime*
+*.properties
+*.json
+*.log
