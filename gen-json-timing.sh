@@ -32,9 +32,10 @@ config = ConfigObj('./gen-json-timing.properties')
 INTERNAL_LOG_FILE = config['directory_logs'] + "/gen-json-timing.log"
 LOG_FOR_ROTATE = 10
 
-stage1_date = config['STAGE1_DATE']
 entry_url = config['ENTRY_URL']
-stage1_url = config['STAGE1_URL']
+
+stages_date = [config['S1_DATE'], config['S2_DATE'], config['S3_DATE']]
+stages_url = [config['S1_URL'],config['S2_URL'],config['S3_URL']]
 
 PID = "/var/run/json-generator-timing"
 
@@ -136,7 +137,7 @@ def genTiming(url):
 		print "Error al llamar a la api:" + str(e)
 
 getEntryList()
-genTiming(stage1_url)
+genTiming(stages_url[0])
 
 #while True:
 	
