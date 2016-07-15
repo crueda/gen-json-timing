@@ -26,7 +26,6 @@ from xml.dom import minidom
 
 #### VARIABLES #########################################################
 from configobj import ConfigObj
-#config = ConfigObj('/opt/gen-json/gen-json-timing.properties')
 config = ConfigObj('./gen-json-timing.properties')
 
 INTERNAL_LOG_FILE = config['directory_logs'] + "/gen-json-timing.log"
@@ -34,8 +33,8 @@ LOG_FOR_ROTATE = 10
 
 entry_url = config['ENTRY_URL']
 
-stages_date = [config['S1_DATE'], config['S2_DATE'], config['S3_DATE']]
-stages_url = [config['S1_URL'],config['S2_URL'],config['S3_URL']]
+stages_date = [config['S3_DATE'], config['S2_DATE'], config['S1_DATE']]
+stages_url = [config['S3_URL'],config['S2_URL'],config['S1_URL']]
 
 PID = "/var/run/json-generator-timing"
 
@@ -85,6 +84,19 @@ pidfile.close()
 def getUTC():
 	t = calendar.timegm(datetime.datetime.utcnow().utctimetuple())
 	return int(t)
+
+def getEpoch(isoDate):
+	return (calendar.timegm(time.strptime(isoDate, '%Y-%m-%dT%H:%M:%SZ'))) * 1000
+
+def getActualStage(stages_epoch):
+	epoch_time = int(time.time()) * 1000
+	index = 0
+	for s in stages_epoch:
+		if (epoch_time > (s - 300000)):
+			return index
+		index += 1
+	return 0
+
 
 def getEntryList():
 	headers = {"Content-type": "application/json"}	
@@ -137,8 +149,12 @@ def genTiming(url):
 		print "Error al llamar a la api:" + str(e)
 
 getEntryList()
-genTiming(stages_url[0])
+stages_epoch = [getEpoch(stages_date[0]),getEpoch(stages_date[1]),getEpoch(stages_date[2])]
 
+
+indexStage = getActualStage(stages_epoch)
+genTiming(stages_url[indexStage])
 #while True:
-	
+#	indexStage = getActualStage(stages_epoch)
+#	genTiming(stages_url[indexStage])
 #	time.sleep(1)
