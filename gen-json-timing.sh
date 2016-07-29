@@ -91,7 +91,7 @@ def getUTC():
 	return int(t)
 
 def getEpoch(isoDate):
-	return (calendar.timegm(time.strptime(isoDate, '%Y-%m-%dT%H:%M:%SZ'))) * 1000
+	return ((calendar.timegm(time.strptime(isoDate, '%Y-%m-%dT%H:%M:%SZ'))) * 1000) - 7800000
 
 def getEpochTime(isoDate):
 	return (calendar.timegm(time.strptime(isoDate, '%H:%M.%S')))
@@ -102,7 +102,9 @@ def getActualStage(stages_epoch):
 	epoch_time = epoch_time + 3600000
 	index = 0
 	for s in stages_epoch:
+		#print "--->" + str(s)
 		if (epoch_time > (s - 300000)):
+			#print s
 			return index
 		index += 1
 	return 23
@@ -136,7 +138,8 @@ def genTiming(url):
 		response = requests.get(url)
 		timingXml = response.text
 
-		xmldoc = minidom.parseString(timingXml)
+		#xmldoc = minidom.parseString(timingXml)
+		xmldoc = minidom.parseString(u'{0}'.format(timingXml).encode('utf-8'))
 		itemlistSplit = xmldoc.getElementsByTagName('splitTimes')
 		stageId = itemlistSplit[0].attributes['stage'].value
 		stageName = itemlistSplit[0].attributes['location'].value
@@ -150,12 +153,13 @@ def genTiming(url):
 			nr = s.attributes['nr'].value
 			stime = s.attributes['time'].value
 
-			competitor = Competitor() 
-			competitor.nr = nr
-			competitor.stime = stime
-			competitor.epoch_time = getEpochTime(stime)
+			if (stime != ""):
+				competitor = Competitor() 
+				competitor.nr = nr
+				competitor.stime = stime
+				competitor.epoch_time = getEpochTime(stime)
 
-			competitor_list.append(competitor)
+				competitor_list.append(competitor)
 			'''
 			try:
 				competitor = {"type": "car_timing", "properties": {"pos": int(pos), "nr": str(nr), "driver": entryList[str(nr)], "diff": stime}}
@@ -170,8 +174,8 @@ def genTiming(url):
 			array_list.append(competitorOrdered)
 			position += 1
 
-		#with open('/var/www2/timing.json', 'w') as outfile:		
-		with open('/Applications/MAMP/htdocs/wrc-hs/timing.json', 'w') as outfile:
+		with open('/var/www2/timing.json', 'w') as outfile:		
+		#with open('/Applications/MAMP/htdocs/wrc-hs/timing.json', 'w') as outfile:
 		#with open('./timing.json', 'w') as outfile:
 			json.dump(array_list, outfile)
 
@@ -179,10 +183,12 @@ def genTiming(url):
 		print "Error al llamar a la api:" + str(e)
 
 getEntryList()
-stages_epoch = [getEpoch(stages_date[0]),getEpoch(stages_date[1]),getEpoch(stages_date[2])]
+stages_epoch = [getEpoch(stages_date[0]),getEpoch(stages_date[1]),getEpoch(stages_date[2]),getEpoch(stages_date[3]),getEpoch(stages_date[4]),getEpoch(stages_date[5]),getEpoch(stages_date[6]),getEpoch(stages_date[7]),getEpoch(stages_date[8]),getEpoch(stages_date[9]),getEpoch(stages_date[10]),getEpoch(stages_date[11]),getEpoch(stages_date[12]),getEpoch(stages_date[13]),getEpoch(stages_date[14]),getEpoch(stages_date[15]),getEpoch(stages_date[16]),getEpoch(stages_date[17]),getEpoch(stages_date[18]),getEpoch(stages_date[19]),getEpoch(stages_date[20]),getEpoch(stages_date[21]),getEpoch(stages_date[22]),getEpoch(stages_date[23])]
 
 
 indexStage = getActualStage(stages_epoch)
+print indexStage
+print stages_url[indexStage]
 genTiming(stages_url[indexStage])
 #while True:
 #	indexStage = getActualStage(stages_epoch)
